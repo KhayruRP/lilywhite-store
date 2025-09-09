@@ -4,7 +4,7 @@ from django.shortcuts import render
 def show_main(request):
     data = {
         'Aplikasi' : 'Lilywhite Store',
-        'Name': 'Khayru RafamandaPrananta',
+        'Name': 'Khayru Rafamanda Prananta',
         'class': 'PBP F',
         'NPM' : '2406495893'
     }
