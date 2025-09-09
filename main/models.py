@@ -14,7 +14,7 @@ class News(models.Model):
     ]
     
     title = models.CharField(max_length=255)
-    content = models.TextField()
+    price = models.IntegerField()
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='new')
     thumbnail = models.URLField(blank=True, null=True)
     store_views = models.PositiveIntegerField(default=0)
