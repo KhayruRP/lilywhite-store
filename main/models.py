@@ -4,7 +4,7 @@ from django.db import models
 import uuid
 from django.db import models
 
-class News(models.Model):
+class Items(models.Model):
     CATEGORY_CHOICES = [
         ('jersey', 'Jersey'),
         ('shoes', 'Shoes'),
@@ -13,8 +13,10 @@ class News(models.Model):
         ('new', 'New')
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     price = models.IntegerField()
+    content = models.TextField(default="")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='new')
     thumbnail = models.URLField(blank=True, null=True)
     store_views = models.PositiveIntegerField(default=0)

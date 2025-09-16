@@ -3,77 +3,53 @@ Nama: Khayru Rafamanda Prananta
 Kelas: PBP F
 NPM: 2406495893
 
-LANGKAH PENGERJAAN [Soal 1]
+ScreenShot JSON dan XML: ristek.link/KhayruRPrananta-Tugas2-Screenshot
 
-LANGKAH PERSIAPAN
-1. Buat repositori baru di github dan clone di folder tugas 2 ini
-2. Buat requirements.txt dan lakukan install dengan pip install -r requirements.txt buat proyek django dengan run 
-"django-admin startproject [nama proyek] ." di terminal folder. Untuk proyek kali ini saya namakan lily_white
-3. Buka file .env dan tambahkan konfigurasi PRODUCTION=False. buat file .env.prod dengan mengisi kredensial pribadi sesuai yang dikirim di email. 
-4. Menambahkan allowed host -> ["localhost", "127.0.0.1"] di settings.py . Di file itu juga tambahkan "PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'"
-5. lanjut buat persiapan django
+SOAL
+1) Data delivery bertujuan untuk mengirimkan data dari tempat penyimpanan ke orang atau aplikasi yang membutuhkannya. Kita butuh data delivery agar data dari server bisa dikirim ke user atau sistem secara cepat dan selalu terupdate, sehingga informasi dapat dipakai
 
-LANGKAH DJANGO
-1. Activate virtual environment dengan run "source env/bin/activate"
-2. run "python manage.py startapp main" di terminal untuk membuat aplikasi baru dengan nama main. kemudian di file setting.py, di INSTALLED_APPS tambahkan "main" di dalam kurung siku
-3. lanjut buat view web
+2) Saya lebih suka JSON karena praktis, ringan, dan sesuai dengan kebutuhan aplikasi modern yang membutuhkan kecepatan serta kemudahan integrasi. JSON menjadi lebih populer dibanding XML karena strukturnya sederhana, mudah dibaca manusia, gampang dicerna oleh berbagai bahasa pemrograman, dan mendukung komunikasi data yang efisien, sehingga banyak digunakan sebagai standar dalam pengembangan API dan platform berbasis web saat ini.
 
-LANGKAH TEMPLATE
-1. Buat folder baru yaitu templates dalam folder main. Kemudian di dalam templates buat main.html. Di main.html ini bertujuan untuk mengatur atau menuliskan apa yang ingin ditampilkan di web nanti. Bisa juga mengambil data dari views.py untuk ditampilkan dengan melakukan {{x_variable}}. Tambahkan juga heading tag<h> dan paragraph tag<p> 
-2. Lanjut mengatur models.py
+3) Method is_valid() digunakan untuk cek apakah data yang dimasukkan ke dalam form sesuai dengan aturan validasi yang sudah didefinisikan. Validasi ini mmeliputi:
+- Apakah semua field yang wajib/required sudah diisi.
+- Apakah tipe data yang dimasukkan sesuai
+- Apakah aturan tambahan terpenuhi.
 
-LANGKAH MODELS
-1. Models.py bertujuan untuk mengatur dan mengelola data pada sebuah aplikasi. isinya akan menyesuaikan kebutuhan dari tema aplikasinya. 
-Saya menggunakan    
-    title -> CharField
-    price -> IntegerField
-    category -> CharField
-    thumbnail -> URLField
-    store_views -> PositiveIntegerField
-    created_at -> DateTimeField
-    is_featured -> BooleanField
-2. Lanjut konfigurasi URL
+Jika semua validasi lolos, is_valid() akan return True. Jika ada kesalahan, akan return False.
 
-LANGKAH KONFIGURASI URL
-1. file urls.py bertujuan untuk semacam mengarahkan ke path tertentu. untuk defaultnya adalah '' yaitu sebagai homepage. path-path ini bisa di uji coba dengan local host
+Method is_valid() dibutuhkan agar data yang salah tidak masuk ke database, pengguna mendapat feedback yang jelas jika ada kesalahan input, dan keamanan terjaga dari input berbahaya
 
-LANGKAH TESTING DI LOCAL HOST
-1. Jalankan "python3 manage.py migrate" untuk migrasi, kemudian "python3 manage.py runserver" untuk jalankan server. 
-2. Buka http://localhost:8000 untuk lihat localhost
+4) {% csrf_token %} diperlukan untuk mencegah CSRF (Cross-Site Request Forgery) yaitu jenis serangan di mana penyerang memaksa browser korban mengirimkan permintaan (biasanya POST) ke website yang sudah diautentikasi sehingga tindakan tidak diinginkan terjadi atas nama korban.
 
-LANGKAH GIT
-1. Jika sudah selesai atau selesai merubah maka kita harus push ke git. diawal dengan run "git add ." di terminal
-2. run "git commit-m'xxx'" untuk commit
-3. run "git push origin master" untuk push ke github
+Kita membutuhkan csrf_token pada form Django untuk melindungi aplikasi dari serangan CSRF (Cross-Site Request Forgery), karena tanpa token ini permintaan POST bisa ditolak oleh middleware bawaan Django atau, jika proteksi dimatikan, penyerang dapat membuat halaman berbahaya yang secara otomatis mengirimkan permintaan ke server dengan memanfaatkan cookie sesi korban sehingga tindakan penting seperti mengganti password atau menghapus data dapat dilakukan tanpa sepengetahuan pengguna.
 
-LANGAK DEPLOY PWS
-1. Setelah udah push ke GIT, lakukan deploy pws dengan run "git remote add pws <link pws>"
-2. Kemudian run "git branch -M master"
-3. git push pws master
+Bagaimana penyerang memanfaatkan ini (alur singkat):
+1. Korban login ke xyz.com.
+2. Korban mengunjungi halaman jahat milik penyerang.
+3. Halaman jahat berisi form atau skrip yang mengirim POST ke xyz.com/change_email/ atau xyz.com/transfer/ dengan parameter yang diinginkan.
+4. Browser korban otomatis mengirimkan cookie sesi ke xyz.com, sehingga server menganggap permintaan sah dari korban.
+5. Jika server tidak memeriksa CSRF token, aksi itu dijalankan — penyerang berhasil memanfaatkan otorisasi korban.
 
-Link PWS: https://khayru-rafamanda-storelilywhites.pbp.cs.ui.ac.id/
+5) saya akan jelaskan secara singkat saja
+1. Buat direktori templates di root proyek dan tambahkan berkas base.html sebagai template dasar dengan blok {% block meta %} dan {% block content %}.
 
+2. Buka settings.py, pada variabel TEMPLATES tambahkan baris 'DIRS': [BASE_DIR / 'templates'], lalu tambahkan URL proyek PWS ke dalam CSRF_TRUSTED_ORIGINS.
 
+3. Buat berkas forms.py di aplikasi main yang berisi ItemsForm (ModelForm) dengan field: title, content, category, thumbnail, dan is_featured.
 
-BAGAN CLIENT KE WEB [SOAL 2]
-![VISUALISASI BAGAN](BaganClientToWeb.jpeg) 
-/Users/khayru/Downloads/UI-SI24/MATKUL/SMT3/PBP/Tugas2/lilywhite-store/BaganClientToWeb.jpeg
+4. Tambahkan fungsi di views.py:
+show_main → mengambil semua objek Items dari database.
+create_items → menampilkan dan memproses form penambahan item baru.
+show_items → mengambil data News berdasarkan id menggunakan get_object_or_404, mengembalikan 404 jika tidak ditemukan.
 
-1. Client/Browser mengirim request
-2. urls.py memeriksa URL dan meneruskannya ke fungsi di views.py
-3. views.py menjalankan logika: jika perlu, ambil/ubah data lewat models.py
-4. Hasil data akan dikirim ke template HTML untuk dirender kemudian ditampil
-5. Response HTML dikirim kembali ke client/browser
+5. Update urls.py dengan routing baru untuk fungsi-fungsi di views.py.
 
-PERAN SETTINGS.PY [SOAL 3]
-Settings.py adalah pusat pengaturan untuk proyek Django. Setiap kali Django dijalankan, semua komponen (database, apps, template, dan lainnya) akan berpatokan pada konfigurasi di Settings.py. Dalam Django, settings.py memiliki berbagai pengaturan penting agar aplikasi dapat berjalan dengan baik. Seperti INSTALLED_APPS berisi daftar aplikasi yang digunakan dalam proyek, DATABASES menyimpan konfigurasi database, MIDDLEWARE mengatur proses tambahan pada request dan response, TEMPLATES mengatur engine template untuk merender HTML, ALLOWED_HOSTS berfungsi sebagai pengaman agar hanya host tertentu yang dapat mengakses aplikasi, dan STATICFILES mengatur lokasi serta pengelolaan file statis seperti CSS, JavaScript, dan gambar.
+6. Buat main.html di folder main/templates, isi blok content untuk menampilkan daftar data items serta tombol “Add Items” yang mengarahkan ke halaman form.
 
-CARA KERJA MIGRASI [SOAL 4]
-Migrasi di Django adalah cara untuk menjaga agar struktur database selalu sama dengan struktur model (models.py) yang kita buat
-Jadi Saat kita menambah, menghapus, atau mengubah field di model, Django perlu mengetahui bahwa databasenya juga harus ikut berubah. Dengan perintah makemigrations, Django membuat file migrasi yang berisi sebagai instruksi perubahan. Lalu, perintah migrate akan mengeksekusi instruksi tersebut ke database
+7. Buat dua file template baru di folder templates:
+- create_items.html → halaman untuk menambahkan item baru.
+- items_detail.html → halaman untuk menampilkan detail item tertentu.
 
-Menurut Anda, dari semua framework yang ada, mengapa framework Django dijadikan permulaan pembelajaran pengembangan perangkat lunak? [SOAL 5]
-Menurut saya, Django sangat cocok buat awal belajar web development karena udah disediakan banyak hal yang siap pakai. Jadi tidak perlu ribet bikin login, database, atau admin dari nol. Django juga pakai Python yang mana sudah dipelajari di semester 1. Konsep MVT juga mudah dipahami untuk belajar alur web app. 
+8. TTambahkan method show xml dan json di views.py . juga import HttpResponse dan Serializer pada bagian paling atas. Tambah method show xml dan json by id. 
 
-[FEEDBACK]
-Kak Sayyid sudah sangat membantu proses pembelajaran di mata kuliah PBP ini. Saat saya kesulitan, kak Sayyid selalu siap memberikan bantuan dan menjamin saya kedepannya akan bisa mengerjakan tugas/tutorial secara mandiri.
+9. Tambahkan routing URL untuk mengakses data dalam format XML maupun JSON, baik untuk seluruh data maupun berdasarkan id tertentu.
