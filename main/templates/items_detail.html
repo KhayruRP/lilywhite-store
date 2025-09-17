@@ -3,7 +3,7 @@
 <p><a href="{% url 'main:show_main' %}"><button>← Back to Items List</button></a></p>
 
 <h1>{{ items.name }}</h1>
-<p><b>{{ items.get_category_display }}</b>{% if items.is_featured %} | 
+<p><b>{{ items.get_category_display }} | </b>{% if items.is_featured %} | 
     <b>Featured </b>{% endif %}<i>{{ items.created_at|date:"d M Y, H:i" }}</i> </p>
 
     <p><b>Rp {{ items.price |floatformat:0}}</b></p>
