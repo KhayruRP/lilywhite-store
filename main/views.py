@@ -37,7 +37,7 @@ def show_items(request, id):
     }
 
     return render(request, "items_detail.html", context)
-
+#aaa
 def show_xml(request):
      items_list = Items.objects.all()
      xml_data = serializers.serialize("xml", items_list)
