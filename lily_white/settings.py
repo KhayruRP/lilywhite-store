@@ -39,7 +39,7 @@ ALLOWED_HOSTS = [
 
 ...
 CSRF_TRUSTED_ORIGINS = [
-    "https://khayru-rafamanda-storelilywhites.pbp.cs.ui.ac.id/"
+    "https://khayru-rafamanda-storelilywhites.pbp.cs.ui.ac.id"
 ]
 ...
 
