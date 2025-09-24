@@ -44,7 +44,7 @@ Bagaimana penyerang memanfaatkan ini (alur singkat):
 4. Tambahkan fungsi di views.py:
 show_main → mengambil semua objek Items dari database.
 create_items → menampilkan dan memproses form penambahan item baru.
-show_items → mengambil data News berdasarkan id menggunakan get_object_or_404, mengembalikan 404 jika tidak ditemukan.
+show_items → mengambil data Items berdasarkan id menggunakan get_object_or_404, mengembalikan 404 jika tidak ditemukan.
 
 5. Update urls.py dengan routing baru untuk fungsi-fungsi di views.py.
 
@@ -109,3 +109,63 @@ Bagaimana Django menanganinya?
 - Penandatanganan (signing): Saat memakai backend cookie-based session, data sesi ditandatangani dengan SECRET_KEY (tidak bisa diubah penyerang tanpa ketahuan), meski tetap terbaca jika tidak dienkripsi—karena itu hindari menyimpan data sensitif di sana.
 - Best practices siap pakai: Pakai HTTPS + SECURE_SSL_REDIRECT, pertimbangkan HSTS (SECURE_HSTS_SECONDS), set masa berlaku wajar (SESSION_COOKIE_AGE), batasi domain/path, dan jangan menaruh informasi rahasia langsung di cookie.
 
+5. PROSEDUR
+Registrasi (membuat akun)
+Buka main/views.py, import UserCreationForm dan messages.
+Tambahkan view register(request) yang:
+- Inisialisasi UserCreationForm().
+- Pada POST, validasi form.is_valid(), lalu form.save() untuk membuat user baru.
+Buat main/templates/register.html, extend base.html, render form dengan {{ form.as_table }}, dan tombol submit. Sertakan {% csrf_token %}.
+Daftarkan URL: di main/urls.py, path('register/', register, name='register').
+
+Login
+Di main/views.py, import AuthenticationForm, authenticate, dan login.
+Tambahkan view login_user(request) yang:
+Pada POST, buat AuthenticationForm(data=request.POST); jika valid, ambil user = form.get_user() dan panggil login(request, user).
+Jika GET, buat AuthenticationForm(request) lalu render template.
+Buat main/templates/login.html untuk merender form login (pakai {{ form.as_table }}, {% csrf_token %}, dan tautan ke halaman register).
+Tambahkan URL path('login/', login_user, name='login').
+
+Logout
+Di main/views.py, import juga logout.
+Tambahkan view logout_user(request) yang memanggil logout(request) lalu redirect('main:login').
+Tambahkan tombol Logout di main/templates/main.html:
+<a href="{% url 'main:logout' %}"><button>Logout</button></a>
+(Gunakan {% url 'app_name:view_name' %} untuk resolusi URL dinamis.)
+Tambahkan URL path('logout/', logout_user, name='logout').
+
+Restriksi akses (hanya user login yang boleh masuk)
+Di main/views.py, import login_required.
+Pasang decorator @login_required(login_url='/login') di atas view yang ingin dibatasi (mis. show_main, show_Items). Pengunjung yang belum login akan dialihkan ke /login.
+
+Menyimpan & menampilkan “last_login” via Cookies
+Di main/views.py, import datetime, HttpResponseRedirect, reverse.
+Pada login_user, setelah login(request, user), alih-alih redirect() langsung:
+Buat response = HttpResponseRedirect(reverse("main:show_main"))
+Set cookie: response.set_cookie('last_login', str(datetime.datetime.now()))
+return response
+Di show_main, pada context, ambil cookie aman dengan default:
+'last_login': request.COOKIES.get('last_login', 'Never')
+
+(Akan tampil di template sebagai info waktu login terakhir.)
+Pada logout_user, setelah logout(request) kembalikan HttpResponseRedirect(...) lalu response.delete_cookie('last_login').
+Tampilkan di main.html:
+<h5>Sesi terakhir login: {{ last_login }}</h5>
+(Opsional) Verifikasi cookie last_login, sessionid, csrftoken via DevTools → Application → Cookies.
+
+Mengaitkan model konten (Items) ke User
+Di main/models.py, import User dari django.contrib.auth.models.
+Tambah field relasi:
+user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+on_delete=CASCADE: hapus user → seluruh Items user ikut terhapus.
+null=True: data lama tetap valid meski belum punya user.
+Migrasi skema: python manage.py makemigrations && python manage.py migrate. (WAJIB setiap ubah model.)
+Di view pembuatan konten (mis. create_Items), simpan objek form dengan commit=False, isi Items_entry.user = request.user, lalu save().
+Di show_main, sediakan filter berdasarkan query string:
+filter=all → Items.objects.all()
+filter=my → Items.objects.filter(user=request.user)
+Juga ganti name pada context menjadi request.user.username.
+
+Di main.html, tambahkan tombol filter:
+<a href="?filter=all"><button type="button">All Items</button></a>
+<a href="?filter=my"><button type="button">My Items</button></a>

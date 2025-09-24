@@ -14,7 +14,12 @@ from django.urls import reverse
 # Create your views here.
 @login_required(login_url='/login')
 def show_main(request):
-    items_list = Items.objects.all()
+    items_type = request.GET.get("filter", "all")  # default 'all'
+
+    if items_type == "all":
+        items_list = Items.objects.all()
+    else:
+        items_list = Items.objects.filter(user=request.user)
     data = {
         'Aplikasi' : 'Lilywhite Store',
         'Name': 'Khayru Rafamanda Prananta',
@@ -30,12 +35,17 @@ def show_main(request):
 def create_items(request):
     form = ItemsForms(request.POST or None)
 
-    if form.is_valid() and request.method == "POST":
-        form.save()
+    if form.is_valid() and request.method == 'POST':
+        Items_entry = form.save(commit = False)
+        Items_entry.user = request.user
+        Items_entry.save()
         return redirect('main:show_main')
 
-    context = {'form': form}
-    return render(request, "create_items.html", context)
+    context = {
+        'form': form
+    }
+
+    return render(request, "create_Items.html", context)
 
 @login_required(login_url='/login')
 def show_items(request, id):
