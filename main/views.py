@@ -45,7 +45,7 @@ def create_items(request):
         'form': form
     }
 
-    return render(request, "create_Items.html", context)
+    return render(request, "create_items.html", context)
 
 @login_required(login_url='/login')
 def show_items(request, id):
