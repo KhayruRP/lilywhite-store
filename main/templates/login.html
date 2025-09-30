@@ -48,7 +48,7 @@
             name="username" 
             type="text" 
             required 
-            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:border-pink-500 transition-colors" 
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 transition-colors" 
             placeholder="Enter your username">
         </div>
 
@@ -59,13 +59,13 @@
             name="password" 
             type="password" 
             required 
-            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:border-pink-500 transition-colors" 
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 transition-colors" 
             placeholder="Enter your password">
         </div>
 
         <button 
           type="submit" 
-          class="w-full bg-pink-600 text-white font-medium py-3 px-4 rounded-md hover:bg-pink-700 transition-colors">
+          class="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-md hover:bg-blue-700 transition-colors">
           Sign In
         </button>
       </form>
@@ -78,7 +78,7 @@
               class="
                 px-4 py-3 rounded-md text-sm border
                 {% if message.tags == 'success' %}
-                  bg-pink-50 border-pink-200 text-pink-700
+                  bg-blue-50 border-blue-200 text-blue-700
                 {% elif message.tags == 'error' %}
                   bg-red-50 border-red-200 text-red-700
                 {% else %}
@@ -94,7 +94,7 @@
       <div class="mt-6 text-center pt-6 border-t border-gray-200">
         <p class="text-gray-500 text-sm">
           Don't have an account? 
-          <a href="{% url 'main:register' %}" class="text-pink-600 hover:text-pink-700 font-medium">
+          <a href="{% url 'main:register' %}" class="text-blue-600 hover:text-blue-700 font-medium">
             Register Now
           </a>
         </p>
