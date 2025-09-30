@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block meta %}
 <title>{{ items.title }} - All about Football</title>
@@ -57,7 +58,7 @@
 
             <div class="mt-6 md:mt-0 flex-1">
       <h1 class="text-3xl font-semibold text-blue-900 mb-2">{{ items.title }}</h1>
-      <p class="text-2xl font-bold text-blue-600 mb-4">Rp {{ items.price }}</p>
+      <p class="text-2xl font-bold text-blue-600 mb-4">Rp {{ items.price|intcomma }}</p>
       <time datetime="{{ items.created_at|date:'c' }}" class="block text-sm text-gray-500 mb-4">
         {{ items.created_at|date:"M j, Y g:i A" }}
       </time>
