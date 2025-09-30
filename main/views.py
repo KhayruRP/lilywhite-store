@@ -120,7 +120,7 @@ def logout_user(request):
 
 def edit_items(request, id):
     news = get_object_or_404(Items, pk=id)
-    form = ItemsForms(request.POST or None, instance=news)
+    form = ItemsForms(request.POST or None, instance=Items)
     if form.is_valid() and request.method == 'POST':
         form.save()
         return redirect('main:show_main')
@@ -129,7 +129,7 @@ def edit_items(request, id):
         'form': form
     }
 
-    return render(request, "edit_news.html", context)
+    return render(request, "edit_items.html", context)
 
 
 def delete_items(request, id):
