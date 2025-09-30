@@ -119,8 +119,8 @@ def logout_user(request):
     return response
 
 def edit_items(request, id):
-    news = get_object_or_404(Items, pk=id)
-    form = ItemsForms(request.POST or None, instance=Items)
+    items = get_object_or_404(Items, pk=id)
+    form = ItemsForms(request.POST or None, instance=items)
     if form.is_valid() and request.method == 'POST':
         form.save()
         return redirect('main:show_main')

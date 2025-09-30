@@ -169,3 +169,7 @@ Juga ganti name pada context menjadi request.user.username.
 Di main.html, tambahkan tombol filter:
 <a href="?filter=all"><button type="button">All Items</button></a>
 <a href="?filter=my"><button type="button">My Items</button></a>
+
+
+TUGAS 5
+1) 
