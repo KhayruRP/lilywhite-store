@@ -172,4 +172,75 @@ Di main.html, tambahkan tombol filter:
 
 
 TUGAS 5
-1) 
+1) Dalam CSS, kalau ada beberapa selector yang mengatur elemen yang sama, browser akan memilih aturan berdasarkan spesifisitas (specificity) dan urutan penulisan. Prinsipnya, aturan yang lebih spesifik akan menang dari yang lebih umum. Urutannya seperti ini: inline style (misalnya style="..." langsung di elemen HTML) memiliki prioritas paling tinggi, lalu disusul oleh ID selector (contoh #judul), kemudian class, attribute, dan pseudo-class selector (contoh .container, [type="text"], :hover), dan terakhir element/tag selector (contoh div, p, h1). Jika ada dua aturan dengan tingkat spesifisitas yang sama, maka yang ditulis paling akhir di file CSS atau HTML akan digunakan. Selain itu, ada juga aturan !important yang bisa memaksa sebuah deklarasi CSS untuk diprioritaskan, meskipun sebenarnya cara ini sebaiknya dipakai hanya jika benar-benar diperlukan.
+
+2) Responsive design penting agar tampilan dan fungsi web tetap nyaman dipakai di berbagai ukuran layar (HP, tablet, desktop) tanpa zoom/scroll horizontal, yang berdampak langsung pada UX, aksesibilitas, SEO, dan konversi. Contoh yang sudah responsif: Tokopedia/Instagram Web—grid, tipografi, dan tombol menyesuaikan lebar layar sehingga navigasi dan aksi tetap mudah di ponsel maupun desktop. Contoh yang belum/kurang responsif: banyak portal pemerintah lama atau situs sekolah lama—layout tabel fixed dan form melebar memaksa pengguna melakukan zoom dan scroll samping, membuat pengisian sulit serta rawan salah. Kesimpulannya, tanpa responsive design, situs cepat ditinggalkan pengguna mobile yang jumlahnya dominan.
+
+3) Margin, border, dan padding adalah tiga hal penting dalam pengaturan tata letak elemen di sebuah halaman web. Margin merupakan jarak yang berada di luar sebuah elemen dan berfungsi untuk mengatur seberapa jauh elemen tersebut dari elemen lain di sekitarnya. Sementara itu, border adalah garis tepi yang mengelilingi elemen, mirip seperti bingkai foto yang membatasi isi dengan bagian luarnya. Padding berbeda lagi, yaitu ruang kosong di dalam elemen, antara isi konten (seperti teks atau gambar) dengan garis tepi (border). Dengan kata lain, margin mengatur jarak luar, border menjadi pembatas, dan padding mengatur jarak dalam. Ketiganya bisa diatur menggunakan CSS, misalnya dengan menuliskan margin: 20px; untuk memberi jarak luar, border: 2px solid black; untuk membuat bingkai hitam, dan padding: 15px; agar isi tidak terlalu menempel pada pinggir kotak. Bagi saya sebagai mahasiswa yang baru belajar, memahami perbedaan ketiganya sangat membantu untuk membuat tampilan web lebih rapi dan enak dilihat.
+
+4) Flexbox dan Grid Layout adalah dua konsep penting dalam CSS yang digunakan untuk mengatur tata letak elemen di halaman web. Flexbox (flexible box) digunakan untuk menyusun elemen secara satu dimensi, artinya kita bisa dengan mudah mengatur posisi elemen secara horizontal (baris) atau vertikal (kolom). Misalnya, dengan flexbox kita bisa membuat menu navigasi agar otomatis merata, atau membuat elemen-elemen di dalam sebuah baris menyesuaikan ukuran ruang yang tersedia.
+
+Sedangkan Grid Layout lebih cocok untuk tata letak dua dimensi, yaitu baris dan kolom sekaligus. Dengan grid, kita bisa membagi halaman menjadi beberapa bagian seperti header, sidebar, konten utama, dan footer, lalu menempatkan elemen sesuai posisi grid yang sudah didefinisikan. Grid memberi kontrol yang lebih rapi untuk layout yang kompleks.
+
+Secara singkat, flexbox berguna saat kita ingin mengatur elemen secara linier dan responsif, seperti tombol yang sejajar atau card yang berderet, sedangkan grid lebih berguna untuk membuat kerangka halaman yang terstruktur dengan baris dan kolom, mirip tabel tapi lebih fleksibel.
+
+
+5) 
+1) Pasang Tailwind, saya menggunakan ini
+- Buka templates/base.html.
+- Tambahkan meta viewport dan script Tailwind CDN tepat di dalam <head>:
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+- Simpan. Ini bikin tampilan responsif di HP dan bisa pakai kelas Tailwind
+
+2) Konfigurasi file statis + CSS global (supaya form rapi)
+- Di settings.py, tambahkan middleware WhiteNoise pas di bawah SecurityMiddleware, dan atur STATIC_URL, STATICFILES_DIRS (mode dev) / STATIC_ROOT (mode production). Contohnya ada di hal. 10
+- Buat folder static/css/ lalu file global.css
+- Hubungkan global.css ke base.html dengan {% load static %} dan <link rel="stylesheet" href="{% static 'css/global.css' %}"/>. 
+
+3) Navbar yang responsif (ada tombol Login/Logout)
+- Buat templates/navbar.html berisi judul, link Home, Create Items, dan blok kondisi user (kalau login → tampil “Welcome …” + Logout; kalau belum → Login & Register)
+- Styling Tailwind dan tombol menu mobile (burger).
+- Di halaman lain, panggil navbar dengan {% include 'navbar.html' %}
+
+4) Halaman Login (rapi + ada pesan error)
+- Buat templates/login.html.
+- Struktur + kelas Tailwind + cara nampilin error per-field/non-field dan pesan messages.
+- (Di views.py) Pakai AuthenticationForm dan login(request, user)
+
+5) Halaman Register (rapi + validasi)
+- Buat templates/register.html.
+- pastikan views.py memakai UserCreationForm.
+
+6) Kartu Berita & Halaman Home (dengan filter + “Last login”)
+- Buat templates/card_items.html untuk 1 kartu berita (gambar, kategori, badge Featured/Hot, judul, ringkasan, tombol Edit/Delete kalau pemilik)
+- Buat/ubah templates/main.html:
+Header “Latest Football Items”.
+Bagian Filter: tombol “All Items” dan “My Items”.
+Tampilkan “Last login: {{ last_login }}” di sisi kanan saat user sudah login
+Kalau tidak ada berita, tampilkan kartu kosong dengan gambar static/image/no-items.png
+(Opsional) Untuk benar-benar mengisi {{ last_login }}, di view login_user kamu bisa set cookie last_login setelah sukses login, lalu di show_main ambil dengan request.COOKIES.get('last_login', 'Never'). Template-nya sudah menyiapkan tempatnya
+
+7) Halaman Detail Items
+Buat templates/items_detail.html untuk tampilan 1 artikel lengkap (kategori, tanggal, views, gambar, konten, author)
+
+8) Halaman Create Items
+Buat templates/create_items.html berisi form (label, field, error per-field) dan tombol Publish/Cancel
+
+9) Halaman Edit Items
+Buat templates/edit_items.html (layout mirip Create)
+
+10) Fitur Edit & Delete di sisi server (views + urls + tombol di UI)
+EDIT
+- Di views.py, buat fungsi edit_items(request, id) yang ambil objek dengan get_object_or_404, bungkus ItemsForm(instance=items), form.is_valid() → form.save() → redirect. 
+- Buat templates/edit_items.html
+- Daftarkan URL: path('items/<uuid:id>/edit', edit_items, name='edit_items')
+- Tampilkan tombol Edit di kartu/home hanya untuk pemilik berita
+
+DELETE
+- Di views.py, buat delete_items(request, id) → get_object_or_404 → delete() → HttpResponseRedirect(reverse('main:show_main'))
+- Daftarkan URL: path('items/<uuid:id>/delete', delete_items, name='delete_items')
+- Munculkan tombol Delete di kartu/home (hanya pemilik)
+
+11) testing
+python manage.py runserver lalu buka http://localhost:8000. Lihat apakah navbar muncul, filter jalan, login/register tampil rapi, tombol Edit/Delete muncul saat login sebagai pemilik dari barang yang di jual.
