@@ -244,3 +244,129 @@ DELETE
 
 11) testing
 python manage.py runserver lalu buka http://localhost:8000. Lihat apakah navbar muncul, filter jalan, login/register tampil rapi, tombol Edit/Delete muncul saat login sebagai pemilik dari barang yang di jual.
+
+
+
+TUGAS 6
+1) Synchronous request itu sifatnya nungguin. Jadi ketika kita kirim request ke server, program akan berhenti dulu sampai server kirim balasan. Selama nunggu, kode di bawahnya belum bisa jalan. Contohnya kayak kita nelpon orang kita nunggu dia jawab dulu baru lanjut ngomong hal lain.
+
+Asynchronous request itu kebalikannya, nggak nungguin. Jadi program tetap bisa jalan ke bagian kode lain sambil nunggu respons dari server. Nanti kalau hasilnya udah datang, baru diproses lewat callback atau promise (kalau di JavaScript). Ibaratnya kayak kita kirim pesan chat ke orang, terus sambil nunggu dibales, kita bisa ngelakuin hal lain dulu.
+
+2) 
+1. Event di front-end
+- User klik tombol / submit form (tapi tanpa reload).
+- JavaScript (XHR/fetch/jQuery AJAX) ngumpulin data dari form.
+
+2. Kirim request ke URL Django
+- JS ngirim HTTP request (biasanya POST/GET) ke endpoint Django (/todos/add/, dll).
+- Untuk POST di Django, harus kirim CSRF token di header.
+
+3. URL routing (urls.py)
+- urls.py nerusin path itu ke fungsi view yang sesuai.
+
+4. View Django proses data
+- View baca data (query string / request.POST / JSON request.body).
+- Lakukan logika: validasi, query DB, dsb.
+
+5. View balikin respon JSON/HTML fragment
+- Biasanya pakai JsonResponse({...}) atau render partial HTML (potongan template) dan kirim balik.
+
+6. JS terima respons
+- Di browser, JS nerima JSON/HTML itu.
+- JS update DOM (misalnya nambah row tabel, nampilin pesan) tanpa reload halaman.
+
+7. UI terasa dinamis
+- Pengguna lihat perubahan langsung.
+
+3) - Halaman nggak perlu reload penuh
+Kalau pakai render biasa (return render()), setiap kali kirim form atau klik tombol, browser bakal refresh seluruh halaman.
+Tapi kalau pakai AJAX, yang dikirim cuma data yang dibutuhkan aja, dan hasilnya bisa langsung ditampilkan di bagian tertentu dari halaman tanpa reload. Jadi terasa lebih cepat dan interaktif.
+
+- Respons lebih cepat & hemat data
+Karena cuma kirim dan terima sebagian data (biasanya JSON atau HTML kecil), waktu respons jadi lebih singkat dan nggak boros bandwidth.
+
+- User experience lebih bagus
+Misalnya pas submit form, bisa langsung munculin pesan “berhasil” tanpa pindah halaman, atau bisa update tabel langsung. Jadi aplikasi terasa lebih “real-time” kayak aplikasi modern.
+
+- Bisa update sebagian tampilan (DOM)
+AJAX memungkinkan kita ubah elemen tertentu aja (misalnya daftar komentar, notifikasi, dsb.) tanpa ganggu bagian lain dari halaman.
+
+- Lebih fleksibel buat fitur interaktif
+Misalnya buat auto-suggestion, live search, validasi input langsung saat mengetik, atau notifikasi tanpa reload — itu semua lebih mudah dibuat pakai AJAX.
+
+4) 
+1. Wajib di server (Django)
+
+- Selalu POST + CSRF
+Pakai @require_POST di view, dan pastikan proteksi CSRF aktif (middleware default).
+
+- Validasi di server (bukan cuma di JS)
+Gunakan AuthenticationForm/UserCreationForm atau forms.Form sendiri, cek clean_*, dll.
+
+- Jangan pernah kirim balik password
+Respons hanya JSON sederhana (ok, message, error per field).
+
+- Hash password pakai bawaan Django
+(PBKDF2/Argon2). Pastikan AUTH_PASSWORD_VALIDATORS aktif.
+
+- Tangani “next” redirect dengan aman
+Validasi next pakai url_has_allowed_host_and_scheme biar nggak open redirect.
+
+- Rate limiting / bruteforce protection
+Contoh: django-ratelimit, django-axes buat throttle percobaan login.
+
+- Hindari user enumeration
+Untuk privasi, balas error generik (“email/username atau password salah”) atau kirim email verifikasi tanpa nge-spill “akun ada/tidak”.
+
+- Email verification untuk Register
+Kirim link verifikasi, baru aktivasi akun.
+
+2. Di sisi AJAX (frontend)
+
+- Kirim CSRF token di header
+Header X-CSRFToken di setiap POST.
+
+- Kirim & terima data minimal
+Hanya field yang perlu; jangan log data sensitif di console.
+
+- Tangani status code dengan benar
+200 sukses, 400/422 validasi gagal, dsb. Update DOM seperlunya (tanpa reload).
+
+3. Setting yang perlu di-hardening (settings.py)
+
+- HTTPS duluan
+SECURE_SSL_REDIRECT = True, SESSION_COOKIE_SECURE = True, CSRF_COOKIE_SECURE = True, aktifkan HSTS (SECURE_HSTS_SECONDS, dst.).
+
+- SameSite cookie
+SESSION_COOKIE_SAMESITE = 'Lax' (default oke), CSRF_COOKIE_SAMESITE = 'Lax'/'Strict' sesuai kebutuhan.
+
+- CORS jangan longgar
+Kalau butuh CORS (SPA berbeda origin), whitelist domain spesifik. Jangan pakai *.
+
+- CSRF trusted origins
+Set CSRF_TRUSTED_ORIGINS untuk domain HTTPS kamu.
+
+4. Tambahan yang bagus kalau sempat
+- CAPTCHA di endpoint Register/Login setelah beberapa gagal.
+- Lockout sementara setelah X kali gagal.
+- Logging aman (jangan log password / token).
+- Limit ukuran request untuk hindari abuse.
+
+
+5) AJAX punya pengaruh besar banget terhadap pengalaman pengguna (User Experience/UX), karena dia bikin website terasa lebih cepat dan interaktif.
+
+- Halaman nggak perlu reload terus
+Tanpa AJAX, setiap kali user klik tombol atau kirim form, browser bakal refresh seluruh halaman — ini bikin pengalaman terasa lambat dan agak ganggu.
+Dengan AJAX, yang berubah cuma bagian tertentu (misalnya tabel, komentar, notifikasi), jadi tampilannya lebih halus dan “real-time”.
+
+- Respons jadi lebih cepat
+Karena data yang dikirim dan diterima cuma sedikit (biasanya JSON), waktu tunggunya lebih singkat. Pengguna nggak harus nunggu lama kayak pas load ulang halaman penuh.
+
+- Interaksi terasa dinamis dan modern
+Contohnya kayak live search (hasil keluar pas kita ngetik), auto-save tanpa klik tombol, atau notifikasi langsung muncul. Semua itu bisa dilakukan berkat AJAX, jadi web-nya lebih “hidup”.
+
+- User nggak kehilangan konteks
+Kalau pakai render biasa, setiap reload bisa bikin posisi scroll atau isian form hilang. AJAX menjaga tampilan tetap stabil, jadi user tetap di posisi yang sama saat data diperbarui.
+
+- Cocok buat aplikasi web interaktif
+AJAX bikin web terasa seperti aplikasi (SPA, dashboard, sistem login dinamis, dll.), bukan cuma halaman statis biasa.

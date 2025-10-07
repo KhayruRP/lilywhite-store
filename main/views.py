@@ -8,8 +8,11 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 import datetime
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.utils.html import strip_tags
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -65,8 +68,22 @@ def show_xml(request):
 
 def show_json(request):
     items_list = Items.objects.all()
-    json_data = serializers.serialize("json", items_list)
-    return HttpResponse(json_data, content_type="application/json")
+    data = [
+        {
+            'id': str(items.id),
+            'title': items.title,
+            'content': items.content,
+            'category': items.category,
+            'thumbnail': items.thumbnail,
+            'items_views': items.items_views,
+            'created_at': items.created_at.isoformat() if items.created_at else None,
+            'is_featured': items.is_featured,
+            'user_id': items.user_id,
+        }
+        for items in items_list
+    ]
+
+    return JsonResponse(data, safe=False)
 
 def show_xml_by_id(request, items_id):
    try:
@@ -77,12 +94,23 @@ def show_xml_by_id(request, items_id):
        return HttpResponse(status=404)
    
 def show_json_by_id(request, items_id):
-   try:
-       items_item = Items.objects.get(pk=items_id)
-       json_data = serializers.serialize("json", [items_item])
-       return HttpResponse(json_data, content_type="application/json")
-   except Items.DoesNotExist:
-       return HttpResponse(status=404)
+    try:
+        items = Items.objects.select_related('user').get(pk=items_id)
+        data = {
+            'id': str(items.id),
+            'title': items.title,
+            'content': items.content,
+            'category': items.category,
+            'thumbnail': items.thumbnail,
+            'items_views': items.items_views,
+            'created_at': items.created_at.isoformat() if items.created_at else None,
+            'is_featured': items.is_featured,
+            'user_id': items.user_id,
+            'user_username': items.user.username if items.user_id else None,
+        }
+        return JsonResponse(data)
+    except Items.DoesNotExist:
+        return JsonResponse({'detail': 'Not found'}, status=404)
 
 
 def register(request):
@@ -140,3 +168,24 @@ def delete_items(request, id):
 
 
 
+@csrf_exempt
+@require_POST
+def add_items_entry_ajax(request):
+    title = strip_tags(request.POST.get("title"))
+    content = strip_tags(request.POST.get("content"))
+    category = request.POST.get("category")
+    thumbnail = request.POST.get("thumbnail")
+    is_featured = request.POST.get("is_featured") == 'on'  # checkbox handling
+    user = request.user
+
+    new_items = Items(
+        title=title, 
+        content=content,
+        category=category,
+        thumbnail=thumbnail,
+        is_featured=is_featured,
+        user=user
+    )
+    new_items.save()
+
+    return HttpResponse(b"CREATED", status=201)
