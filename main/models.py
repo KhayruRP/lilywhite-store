@@ -4,6 +4,7 @@ from django.db import models
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.html import strip_tags
 
 class Items(models.Model):
     CATEGORY_CHOICES = [
@@ -35,3 +36,11 @@ class Items(models.Model):
     def increment_views(self):
         self.store_views += 1
         self.save()
+
+    def clean_title(self):
+        title = self.cleaned_data["title"]
+        return strip_tags(title)
+
+    def clean_content(self):
+        content = self.cleaned_data["content"]
+        return strip_tags(content)

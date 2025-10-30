@@ -8,8 +8,11 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 import datetime
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.utils.html import strip_tags
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -64,9 +67,25 @@ def show_xml(request):
      return HttpResponse(xml_data, content_type="application/xml")
 
 def show_json(request):
-    items_list = Items.objects.all()
-    json_data = serializers.serialize("json", items_list)
-    return HttpResponse(json_data, content_type="application/json")
+    items = Items.objects.all()  # ganti nama model sesuai
+    data = [
+        {
+            'id': str(item.id),
+            'title': item.title,
+            'price': item.price,
+            'content': item.content,
+            'category': item.category,
+            'thumbnail': item.thumbnail,
+            'store_views': item.store_views,
+            'created_at': item.created_at.isoformat() if item.created_at else None,
+            'is_featured': item.is_featured,
+            'user_id': item.user.id if item.user else None,
+            'username': item.user.username if item.user else None,  # optional, biar lebih informatif
+        }
+        for item in items
+    ]
+
+    return JsonResponse(data, safe=False)
 
 def show_xml_by_id(request, items_id):
    try:
@@ -76,14 +95,25 @@ def show_xml_by_id(request, items_id):
    except Items.DoesNotExist:
        return HttpResponse(status=404)
    
-def show_json_by_id(request, items_id):
-   try:
-       items_item = Items.objects.get(pk=items_id)
-       json_data = serializers.serialize("json", [items_item])
-       return HttpResponse(json_data, content_type="application/json")
-   except Items.DoesNotExist:
-       return HttpResponse(status=404)
-
+def show_json_by_id(request, item_id):
+    try:
+        item = Items.objects.select_related('user').get(pk=item_id)
+        data = {
+            'id': str(item.id),
+            'title': item.title,
+            'price': item.price,
+            'content': item.content,
+            'category': item.category,
+            'thumbnail': item.thumbnail,
+            'store_views': item.store_views,
+            'created_at': item.created_at.isoformat() if item.created_at else None,
+            'is_featured': item.is_featured,
+            'user_id': item.user.id if item.user else None,
+            'user_username': item.user.username if item.user else None,
+        }
+        return JsonResponse(data)
+    except Items.DoesNotExist:
+        return JsonResponse({'detail': 'Not found'}, status=404)
 
 def register(request):
     form = UserCreationForm()
@@ -138,5 +168,43 @@ def delete_items(request, id):
     return HttpResponseRedirect(reverse('main:show_main'))
 
 
+@csrf_exempt
+@require_POST
+def add_item_ajax(request):
+    """
+    AJAX endpoint untuk menambahkan item baru tanpa reload halaman.
+    Data dikirim via FormData dari modal.
+    """
+    title = strip_tags(request.POST.get("title", ""))
+    price_raw = request.POST.get("price", "")
+    content = strip_tags(request.POST.get("content", ""))
+    category = request.POST.get("category", "new")
+    thumbnail = request.POST.get("thumbnail", "").strip() or None
+    is_featured = request.POST.get("is_featured") in ["on", "true", "1"]
+    user = request.user if request.user.is_authenticated else None
 
+    # Validasi harga
+    try:
+        price = int(price_raw) if price_raw else 0
+    except ValueError:
+        return JsonResponse({"error": "Invalid price value"}, status=400)
 
+    # Buat instance Items
+    new_item = Items(
+        title=title,
+        price=price,
+        content=content,
+        category=category,
+        thumbnail=thumbnail,
+        is_featured=is_featured,
+        user=user
+    )
+    new_item.save()
+
+    # Respon JSON agar JS tahu item berhasil dibuat
+    return JsonResponse({
+        "status": "created",
+        "id": str(new_item.id),
+        "title": new_item.title,
+        "price": new_item.price,
+    }, status=201)

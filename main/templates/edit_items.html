@@ -55,4 +55,145 @@
     </div>
   </div>
 </div>
+
+<script>
+// Configuration
+const ITEM_ID = "{{ items.id }}";
+const ITEM_DETAIL_ENDPOINT = `{% url 'main:show_json_by_id' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', ITEM_ID);
+
+// DOM Elements (sesuai IDs di items_detail.html)
+const loadingState = document.getElementById('loading-state');
+const errorState = document.getElementById('error-state');
+const articleContent = document.getElementById('article-content');
+const badgesContainer = document.getElementById('badges-container');
+const articleTitle = document.getElementById('article-title');
+const articleDate = document.getElementById('article-date');
+const articleViews = document.getElementById('article-views');
+const featuredImageContainer = document.getElementById('featured-image-container');
+const featuredImage = document.getElementById('featured-image');
+const articleContentText = document.getElementById('article-content-text');
+const articleAuthor = document.getElementById('article-author');
+
+// Helper: show/hide states
+function showState(state) {
+  loadingState.classList.toggle('hidden', state !== 'loading');
+  errorState.classList.toggle('hidden', state !== 'error');
+  articleContent.classList.toggle('hidden', state !== 'ready');
+}
+
+// Helper: human readable category
+function getCategoryLabel(code) {
+  const map = {
+    new: 'New',
+    sale: 'Sale',
+    limited: 'Limited Edition',
+    transfer: 'Transfer',
+    update: 'Update',
+    exclusive: 'Exclusive',
+    match: 'Match',
+    rumor: 'Rumor',
+    analysis: 'Analysis',
+  };
+  return map[code] || code || '';
+}
+
+// Helper: format price in IDR
+function formatPrice(value) {
+  const n = Number(value) || 0;
+  return 'Rp ' + n.toLocaleString('id-ID');
+}
+
+// Render item data into template
+function renderItem(item) {
+  // Title and document title
+  articleTitle.textContent = item.title || 'Untitled';
+  document.title = `${item.title || 'Item'} - Lilywhite Store`;
+
+  // Badges: category / featured / hot
+  badgesContainer.innerHTML = '';
+  const catBadge = document.createElement('span');
+  catBadge.className = 'inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-600 text-white';
+  catBadge.textContent = getCategoryLabel(item.category);
+  badgesContainer.appendChild(catBadge);
+
+  if (item.is_featured) {
+    const f = document.createElement('span');
+    f.className = 'inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800 ml-2';
+    f.textContent = 'Featured';
+    badgesContainer.appendChild(f);
+  }
+
+  if ((item.store_views || 0) > 20) {
+    const h = document.createElement('span');
+    h.className = 'inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-red-100 text-red-800 ml-2';
+    h.textContent = 'Hot';
+    badgesContainer.appendChild(h);
+  }
+
+  // Date and views
+  if (item.created_at) {
+    try {
+      const d = new Date(item.created_at);
+      const formatted = d.toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      articleDate.textContent = formatted;
+    } catch (e) {
+      articleDate.textContent = item.created_at;
+    }
+  } else {
+    articleDate.textContent = '';
+  }
+  articleViews.textContent = `${item.store_views || 0} views`;
+
+  // Featured image
+  if (item.thumbnail) {
+    featuredImage.src = item.thumbnail;
+    featuredImage.alt = item.title || 'Item image';
+    featuredImageContainer.classList.remove('hidden');
+  } else {
+    featuredImageContainer.classList.add('hidden');
+  }
+
+  // Price and content
+  // In your template the content block is articleContentText; we'll prepend price into the content area
+  const priceHtml = `<p class="text-2xl font-bold text-blue-600 mb-4">${formatPrice(item.price)}</p>`;
+  articleContentText.innerHTML = priceHtml + (item.content ? escapeHtml(item.content) : '');
+
+  // Author
+  const authorName = item.user_username || 'Anonymous';
+  articleAuthor.textContent = `Listed by: ${authorName}`;
+
+  // If you want to show edit/delete buttons conditionally, your template already checks user and items.user == user.
+  // We only populate fields here.
+}
+
+// Simple escape to avoid accidental HTML injection (keeps newlines)
+function escapeHtml(raw) {
+  if (!raw) return '';
+  const div = document.createElement('div');
+  div.textContent = raw;
+  let out = div.innerHTML;
+  // maintain line breaks
+  out = out.replace(/\n/g, '<br>');
+  return out;
+}
+
+// Fetch item detail
+async function loadItemDetail() {
+  try {
+    showState('loading');
+    const res = await fetch(ITEM_DETAIL_ENDPOINT, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error('Failed to fetch item detail');
+    const data = await res.json();
+    renderItem(data);
+    showState('ready');
+  } catch (err) {
+    console.error('Error loading item detail:', err);
+    showState('error');
+  }
+}
+
+// Initialize
+loadItemDetail();
+</script>
+
 {% endblock %}
