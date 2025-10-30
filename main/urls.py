@@ -1,5 +1,5 @@
 from django.urls import path
-from main.views import show_main, create_items, show_items, show_xml, show_json, show_xml_by_id, show_json_by_id, register, login_user, logout_user, edit_items, delete_items, add_item_ajax
+from main.views import show_main, create_items, show_items, show_xml, show_json, show_xml_by_id, show_json_by_id, register, login_user, logout_user, edit_items, delete_items, add_item_ajax, edit_item_ajax, delete_item_ajax
 
 app_name = 'main'
 
@@ -18,4 +18,8 @@ urlpatterns = [
     path('items/<uuid:id>/edit', edit_items, name='edit_items'),
     path('items/<uuid:id>/delete', delete_items, name='delete_items'),
     path('create-item-ajax', add_item_ajax, name='add_item_ajax'),
+    path('items/<uuid:id>/edit-ajax/', edit_item_ajax, name='edit_item_ajax'),
+    path('items/<uuid:id>/delete-ajax/', delete_item_ajax, name='delete_item_ajax')
+
+
 ]

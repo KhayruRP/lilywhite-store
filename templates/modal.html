@@ -66,7 +66,7 @@
               class="px-5 py-2.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition">
         Cancel
       </button>
-      <button type="submit" id="submitItem" form="itemsForm"
+      <button type="submit" id="submitBtn" form="itemsForm"
               class="px-5 py-2.5 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition">
         Publish Items
       </button>
@@ -76,48 +76,208 @@
 </div>
 
 <script>
-  function showModal() {
-      const modal = document.getElementById('crudModal');
-      const modalContent = document.getElementById('crudModalContent');
+let editingItemId = null; // null = create mode, otherwise edit mode
 
-      modal.classList.remove('hidden'); 
-      setTimeout(() => {
-        modalContent.classList.remove('opacity-0', 'scale-95');
-        modalContent.classList.add('opacity-100', 'scale-100');
-      }, 50); 
+function showModal() {
+  const modal = document.getElementById('crudModal');
+  const modalContent = document.getElementById('crudModalContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modalContent.classList.remove('opacity-0', 'scale-95');
+    modalContent.classList.add('opacity-100', 'scale-100');
+  }, 50);
+}
+
+function hideModal() {
+  const modal = document.getElementById('crudModal');
+  const modalContent = document.getElementById('crudModalContent');
+  modalContent.classList.remove('opacity-100', 'scale-100');
+  modalContent.classList.add('opacity-0', 'scale-95');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+  }, 150);
+
+  // reset mode & form
+  editingItemId = null;
+  document.getElementById('itemsForm').reset();
+  // restore modal texts
+  const titleEl = document.querySelector('#crudModal h3');
+  const submitBtn = document.getElementById('submitBtn');
+  if (titleEl) titleEl.textContent = 'Add New Items';
+  if (submitBtn) submitBtn.textContent = 'Publish Items';
+}
+
+// open create modal
+function openCreateModal() {
+  editingItemId = null;
+  document.getElementById('itemsForm').reset();
+  document.querySelector('#crudModal h3').textContent = 'Add New Items';
+  document.getElementById('submitBtn').textContent = 'Publish Items';
+  showModal();
+}
+
+// open edit modal and populate form
+async function openEditModal(itemId) {
+  editingItemId = itemId;
+  document.querySelector('#crudModal h3').textContent = 'Edit Item';
+  document.getElementById('submitBtn').textContent = 'Save Changes';
+  showModal();
+
+  // fetch item JSON. Using your existing endpoint show_json_by_id: /json/<id>/
+  const res = await fetch(`/json/${itemId}/`, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) {
+    showToast('Failed to load item data', '', 'error');
+    return;
+  }
+  const item = await res.json();
+
+  // populate form fields (ids must match form input 'name' attributes)
+  document.getElementById('title').value = item.title || '';
+  document.getElementById('price').value = item.price || '';
+  document.getElementById('content').value = item.content || '';
+  document.getElementById('category').value = item.category || 'new';
+  document.getElementById('thumbnail').value = item.thumbnail || '';
+  document.getElementById('is_featured').checked = !!item.is_featured;
+}
+
+// submit form handler (create or edit)
+async function submitItemForm(e) {
+  e.preventDefault();
+  const formEl = document.getElementById('itemsForm');
+  const formData = new FormData(formEl);
+
+  let endpoint = "{% url 'main:add_item_ajax' %}"; // create
+  if (editingItemId) {
+    endpoint = `/items/${editingItemId}/edit-ajax/`; // edit
   }
 
-  function hideModal() {
-      const modal = document.getElementById('crudModal');
-      const modalContent = document.getElementById('crudModalContent');
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    body: formData,
+  });
 
-      modalContent.classList.remove('opacity-100', 'scale-100');
-      modalContent.classList.add('opacity-0', 'scale-95');
+  if (res.ok) {
+  let data = null;
+  try { data = await res.json(); } catch(e) { data = null; }
 
-      setTimeout(() => {
-        modal.classList.add('hidden');
-      }, 150); 
+  hideModal();
+  document.getElementById('itemsForm').reset();
+  showToast(editingItemId ? 'Item updated successfully!' : 'Item added successfully!', '', 'success');
+
+  // kirim detail ke listener utama
+  document.dispatchEvent(new CustomEvent('itemsAdded', { detail: data }));
+} else {
+
+
+    // parse error if possible
+    let errText = 'Failed to save item';
+    try {
+      const errJson = await res.json();
+      errText = errJson?.detail || JSON.stringify(errJson) || errText;
+    } catch (e) {}
+    showToast(errText, '', 'error');
   }
+}
 
-  async function addItemsEntry() {
-    await fetch("{% url 'main:add_item_ajax' %}", {
-      method: "POST",
-      body: new FormData(document.querySelector('#itemsForm')),
-    })
+// wire submit listener
+document.getElementById('itemsForm').addEventListener('submit', submitItemForm);
 
-    document.getElementById("itemsForm").reset();
-    hideModal();
-      
-    // Show toast notification
-
-    // Dispatch custom event to notify main.html about new data
-    document.dispatchEvent(new CustomEvent('itemsAdded'));
-
-    return false;
+// expose openCreateModal/openEditModal globally so card's onclick can call them
+window.openCreateModal = openCreateModal;
+window.openEditModal = openEditModal;
+// CSRF helper (pakai jika endpoint butuh X-CSRFToken; safe walau endpoint pake @csrf_exempt)
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
   }
+  return cookieValue;
+}
 
-  document.getElementById("itemsForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    addItemsEntry();
-})
+// Pemanggilan utama: panggil ini dari tombol card
+// contoh tombol: <button onclick="confirmDeleteItem('{{ items.id }}','{{ items.title }}')">Delete</button>
+async function confirmDeleteItem(itemId, itemTitle) {
+  const confirmed = await showConfirmDialog(
+    'Delete Item',
+    `Are you sure you want to delete "<strong>${escapeHtml(itemTitle)}</strong>"? This action cannot be undone.`
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/items/${itemId}/delete-ajax/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken')  // harmless if endpoint is csrf_exempt; required if not
+      }
+    });
+
+    if (res.ok) {
+      // remove card from DOM if present
+      const card = document.getElementById(`card-${itemId}`);
+      if (card) card.remove();
+
+      showToast('Item deleted successfully!', '', 'success');
+
+      // notify listeners (main page may re-fetch or already updated)
+      document.dispatchEvent(new CustomEvent('itemsAdded', { detail: { deleted: itemId } }));
+    } else {
+      let errText = 'Failed to delete item';
+      try { const j = await res.json(); errText = j?.detail || j?.error || JSON.stringify(j); } catch(e){}
+      showToast(errText, '', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('An error occurred while deleting item', '', 'error');
+  }
+}
+
+// small helper to escape simple HTML for message
+function escapeHtml(raw) {
+  const d = document.createElement('div');
+  d.textContent = raw;
+  return d.innerHTML;
+}
+
+/**
+ * Simple custom confirm dialog (returns Promise<boolean>)
+ * Non-blocking, appended to body and removed after action.
+ */
+function showConfirmDialog(title, messageHtml) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+
+    const box = document.createElement('div');
+    box.className = 'bg-white rounded-lg shadow-lg p-6 w-full max-w-sm text-center';
+
+    box.innerHTML = `
+      <h2 class="text-lg font-semibold text-gray-900 mb-2">${title}</h2>
+      <div class="text-sm text-gray-700 mb-6">${messageHtml}</div>
+      <div class="flex justify-center gap-3">
+        <button id="confirmCancel" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">Cancel</button>
+        <button id="confirmOk" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete</button>
+      </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#confirmCancel').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(false);
+    });
+
+    overlay.querySelector('#confirmOk').addEventListener('click', () => {
+      document.body.removeChild(overlay);
+      resolve(true);
+    });
+  });
+}
 </script>

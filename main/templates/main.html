@@ -21,8 +21,13 @@
    
     </div>
      <button onclick="showModal()" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 font-semibold outline outline-2 outline-blue-600 outline-offset-[-2px] rounded-md hover:bg-blue-600 hover:text-white transition-colors mb-4">
-      Add Items by AJAX
+      Quick Add Item
     </button>
+
+    <button onclick="fetchItemsFromServer()"
+  class="inline-flex items-center px-4 py-2 bg-white text-blue-600 font-semibold outline outline-2 outline-blue-600 outline-offset-[-2px] rounded-md hover:bg-blue-600 hover:text-white transition-colors mb-4">
+  Refresh Items
+</button>
 
     <!-- Filter Section -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 bg-gradient-to-r from-blue-900 to-blue-300 rounded-lg border border-gray-200 p-4">
@@ -250,6 +255,23 @@ function buildItemCardElement(item) {
     return article;
 }
 
+function prependItemToGrid(item) {
+  // jika grid ter-hidden karena empty state, pastikan tampilkan grid
+  if (itemsGridContainer.classList.contains('hidden')) {
+    displayPageSection({ showGrid: true });
+  }
+
+  const card = buildItemCardElement(item);
+  card.id = `card-${item.id}`;
+  // insert di posisi paling atas
+  if (itemsGridContainer.firstChild) {
+    itemsGridContainer.insertBefore(card, itemsGridContainer.firstChild);
+  } else {
+    itemsGridContainer.appendChild(card);
+  }
+}
+
+
 
 // ============================
 // RENDER ALL CARDS
@@ -257,7 +279,7 @@ function buildItemCardElement(item) {
 function renderAllItems(items) {
   itemsGridContainer.innerHTML = '';
   items.forEach(item => {
-    const card = buildItemCard(item);
+    const card = buildItemCardElemet(item);
     itemsGridContainer.appendChild(card);
   });
 }
@@ -292,11 +314,15 @@ async function fetchItemsFromServer() {
 
     allItemsData = await response.json();
     filterAndDisplayItems();
+
+    // optional: beri feedback pengguna
+    // showToast('Items refreshed', 'Latest items loaded', 'success');
   } catch (error) {
     console.error('Error loading items:', error);
     displayPageSection({ showError: true });
   }
 }
+
 
 // ============================
 // EVENT HANDLERS
@@ -323,10 +349,31 @@ function initializeItemsPage() {
 // Start
 initializeItemsPage();
 // Add event listener to detect new items
-document.addEventListener('itemsAdded', function() {
-    // Refresh data without page reload
+// saat ada event itemsAdded, gunakan detail bila tersedia
+document.addEventListener('itemsAdded', function(e) {
+  const data = e?.detail || null;
+  if (data && data.item) {
+    // backend returned the created/updated item -> update DOM accordingly
+    // kalau item baru: prepend
+    if (data.status === 'created' || data.item) {
+      prependItemToGrid(data.item);
+    } else if (data.status === 'updated') {
+      // update existing card in-place (optional)
+      // simplest: refetch whole list
+      fetchItemsFromServer();
+    } else if (data.deleted) {
+      // if delete action passed deleted id, remove DOM
+      const card = document.getElementById(`card-${data.deleted}`);
+      if (card) card.remove();
+    } else {
+      fetchItemsFromServer();
+    }
+  } else {
+    // no detail -> fallback to re-fetch
     fetchItemsFromServer();
+  }
 });
+
 
 
 

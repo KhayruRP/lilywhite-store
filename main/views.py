@@ -11,7 +11,7 @@ import datetime
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.utils.html import strip_tags
 
 # Create your views here.
@@ -34,7 +34,7 @@ def show_main(request):
 
     return render(request, "main.html", data)
 
-
+@login_required(login_url='/login')
 def create_items(request):
     form = ItemsForms(request.POST or None)
 
@@ -95,9 +95,9 @@ def show_xml_by_id(request, items_id):
    except Items.DoesNotExist:
        return HttpResponse(status=404)
    
-def show_json_by_id(request, item_id):
+def show_json_by_id(request, items_id):
     try:
-        item = Items.objects.select_related('user').get(pk=item_id)
+        item = Items.objects.select_related('user').get(pk=items_id)
         data = {
             'id': str(item.id),
             'title': item.title,
@@ -114,6 +114,7 @@ def show_json_by_id(request, item_id):
         return JsonResponse(data)
     except Items.DoesNotExist:
         return JsonResponse({'detail': 'Not found'}, status=404)
+
 
 def register(request):
     form = UserCreationForm()
@@ -134,6 +135,7 @@ def login_user(request):
       if form.is_valid():
         user = form.get_user()
         login(request, user)
+        messages.success(request, f'Welcome back, {user.username}!')
         response = HttpResponseRedirect(reverse("main:show_main"))
         response.set_cookie('last_login', str(datetime.datetime.now()))
         return response
@@ -144,6 +146,7 @@ def login_user(request):
 
 def logout_user(request):
     logout(request)
+    messages.info(request, 'You have successfully logged out.')
     response = HttpResponseRedirect(reverse('main:login'))
     response.delete_cookie('last_login')
     return response
@@ -204,7 +207,73 @@ def add_item_ajax(request):
     # Respon JSON agar JS tahu item berhasil dibuat
     return JsonResponse({
         "status": "created",
-        "id": str(new_item.id),
-        "title": new_item.title,
-        "price": new_item.price,
+        "item": {
+            "id": str(new_item.id),
+            "title": new_item.title,
+            "price": new_item.price,
+            "content": new_item.content,
+            "category": new_item.category,
+            "thumbnail": new_item.thumbnail,
+            "store_views": new_item.store_views,
+            "created_at": new_item.created_at.isoformat() if new_item.created_at else None,
+            "is_featured": new_item.is_featured,
+            "user_id": new_item.user.id if new_item.user else None,
+            "user_username": new_item.user.username if new_item.user else None,
+        }
     }, status=201)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def edit_item_ajax(request, id):
+    """
+    Edit item via AJAX. Uses ItemsForms for validation.
+    """
+    item = get_object_or_404(Items, pk=id)
+
+    # optional: hanya owner yang boleh edit
+    if item.user and request.user != item.user:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    # gunakan ModelForm supaya validasi sama seperti edit_items
+    form = ItemsForms(request.POST or None, instance=item)
+    if form.is_valid():
+        updated = form.save(commit=False)
+        # jaga user tetap sama
+        updated.user = item.user
+        updated.save()
+
+        # kembalikan data yang diperlukan frontend
+        return JsonResponse({
+            "status": "updated",
+            "item": {
+                "id": str(updated.id),
+                "title": updated.title,
+                "price": updated.price,
+                "content": updated.content,
+                "category": updated.category,
+                "thumbnail": updated.thumbnail,
+                "store_views": updated.store_views,
+                "is_featured": updated.is_featured,
+                "user_id": updated.user.id if updated.user else None,
+            }
+        }, status=200)
+    else:
+        # return errors (simple)
+        return JsonResponse({"status": "error", "errors": form.errors}, status=400)
+    
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def delete_item_ajax(request, id):
+    """
+    Hapus item via AJAX dengan konfirmasi popup.
+    """
+    from django.shortcuts import get_object_or_404
+    item = get_object_or_404(Items, pk=id)
+
+    # pastikan hanya pemilik item yang bisa hapus
+    if request.user != item.user:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+
+    item.delete()
+    return JsonResponse({"status": "deleted", "id": str(id)}, status=200)

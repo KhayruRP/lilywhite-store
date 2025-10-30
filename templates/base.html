@@ -12,5 +12,19 @@
   </head>
   <body>
     {% block content %} {% endblock content %}{% include 'toast.html' %} {% include 'modal.html' %}
+
+    {% if messages %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  {% for message in messages %}
+    showToast(
+      "{{ message.tags|capfirst }}", // title
+      "{{ message|escapejs }}",      // message text
+      "{{ message.tags }}"           // type: success, info, warning, error
+    );
+  {% endfor %}
+});
+</script>
+{% endif %}
   </body>
 </html>
