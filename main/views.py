@@ -13,6 +13,11 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 from django.utils.html import strip_tags
+import requests
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.html import strip_tags
+import json
+from django.http import JsonResponse
 
 # Create your views here.
 @login_required(login_url='/login')
@@ -277,3 +282,54 @@ def delete_item_ajax(request, id):
 
     item.delete()
     return JsonResponse({"status": "deleted", "id": str(id)}, status=200)
+
+def proxy_image(request):
+    image_url = request.GET.get('url')
+    if not image_url:
+        return HttpResponse('No URL provided', status=400)
+    
+    try:
+        # Fetch image from external source
+        response = requests.get(image_url, timeout=10)
+        response.raise_for_status()
+        
+        # Return the image with proper content type
+        return HttpResponse(
+            response.content,
+            content_type=response.headers.get('Content-Type', 'image/jpeg')
+        )
+    except requests.RequestException as e:
+        return HttpResponse(f'Error fetching image: {str(e)}', status=500)
+    
+
+@csrf_exempt
+def create_items_flutter(request):
+    if request.method == 'POST':
+        title = strip_tags(request.POST.get("title", ""))
+        price_raw = request.POST.get("price", "")
+        content = strip_tags(request.POST.get("content", ""))
+        category = request.POST.get("category", "new")
+        thumbnail = request.POST.get("thumbnail", "").strip() or None
+        is_featured = request.POST.get("is_featured") in ["on", "true", "1"]
+        user = request.user if request.user.is_authenticated else None
+
+        # Validasi harga
+        try:
+            price = int(price_raw) if price_raw else 0
+        except ValueError:
+            return JsonResponse({"error": "Invalid price value"}, status=400)
+        
+        new_item = Items(
+        title=title,
+        price=price,
+        content=content,
+        category=category,
+        thumbnail=thumbnail,
+        is_featured=is_featured,
+        user=user
+        )
+        new_item.save()
+        
+        return JsonResponse({"status": "success"}, status=200)
+    else:
+        return JsonResponse({"status": "error"}, status=401)
