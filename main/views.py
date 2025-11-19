@@ -71,8 +71,13 @@ def show_xml(request):
      xml_data = serializers.serialize("xml", items_list)
      return HttpResponse(xml_data, content_type="application/xml")
 
+@login_required(login_url='/login')
 def show_json(request):
-    items = Items.objects.all()  # ganti nama model sesuai
+    filter_type = request.GET.get("filter", "all")
+    if filter_type == "my":
+        items = Items.objects.filter(user=request.user)
+    else:
+        items = Items.objects.all()
     data = [
         {
             'id': str(item.id),
@@ -305,12 +310,14 @@ def proxy_image(request):
 @csrf_exempt
 def create_items_flutter(request):
     if request.method == 'POST':
-        title = strip_tags(request.POST.get("title", ""))
-        price_raw = request.POST.get("price", "")
-        content = strip_tags(request.POST.get("content", ""))
-        category = request.POST.get("category", "new")
-        thumbnail = request.POST.get("thumbnail", "").strip() or None
-        is_featured = request.POST.get("is_featured") in ["on", "true", "1"]
+        data = json.loads(request.body)
+        print(data.get("title"))
+        title = strip_tags(data.get("title", ""))
+        price_raw = data.get("price", "")
+        description = strip_tags(data.get("content", ""))
+        category = data.get("category", "new")
+        thumbnail = data.get("thumbnail", "").strip() or None
+        is_featured = data.get("is_featured") in ["on", "true", "1"]
         user = request.user if request.user.is_authenticated else None
 
         # Validasi harga
@@ -320,16 +327,16 @@ def create_items_flutter(request):
             return JsonResponse({"error": "Invalid price value"}, status=400)
         
         new_item = Items(
-        title=title,
-        price=price,
-        content=content,
-        category=category,
-        thumbnail=thumbnail,
-        is_featured=is_featured,
-        user=user
+            title=title,
+            price=price,
+            content=description,
+            category=category,
+            thumbnail=thumbnail,
+            is_featured=is_featured,
+            user=user
         )
         new_item.save()
-        
+        print("success")
         return JsonResponse({"status": "success"}, status=200)
     else:
         return JsonResponse({"status": "error"}, status=401)
